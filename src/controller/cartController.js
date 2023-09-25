@@ -41,23 +41,23 @@ const createCart = async (req, res) => {
             const createCart = await cartModel.create(newCart)
 
             return res.status(201).send({ status: true, message: createCart })
-        }else{  // if cart exist
+        } else {  // if cart exist
 
             if (!mongoose.isValidObjectId(cartId)) return res.status(400).send({ status: false, message: "please enter valid cartId in request body" })
             let checkCart = await cartModel.findById(cartId).lean() //it will convert mongoose object to js object
-            if(!checkCart) return res.status(404).send({status:false, message:"Cart does not exist !"})
+            if (!checkCart) return res.status(404).send({ status: false, message: "Cart does not exist !" })
 
             let courseData = await courseModel.findById(courseId)
 
             let totalPrice = checkCart.totalPrice + courseData.price //! check weather it's working or not
 
             // Authorisation
-            if(checkCart.userId != userId) return res.status(403).send({status:false, message:"You are not authorised to store course in this cart"})
+            if (checkCart.userId != userId) return res.status(403).send({ status: false, message: "You are not authorised to store course in this cart" })
 
-            let createCart = await cartModel.findByIdAndUpdate(checkCart._id,{$set:{totalPrice:totalPrice}}, {new:true})
+            let createCart = await cartModel.findByIdAndUpdate(checkCart._id, { $set: { totalPrice: totalPrice } }, { new: true })
 
-            return res.status(201).send({status:true, message:createCart})
-        }   
+            return res.status(201).send({ status: true, message: createCart })
+        }
 
     } catch (error) {
         res.status(500).send({ status: false, message: error.message })
@@ -65,4 +65,44 @@ const createCart = async (req, res) => {
 
 }
 
-module.exports = { createCart }
+const getCart = async (req, res) => {
+    try {
+
+        let data = req.body
+        const { userId } = data
+
+        let userData = await userModel.findById(userId)
+        if (!userData) return res.status(404).send({ status: false, message: "User not found!" })
+
+        let cartData = await cartModel.findOne({ userId })
+        if (!cartData) return res.status(404).send({ status: false, message: `You haven't added any products to your cart` })
+
+        res.status(200).send({ status: true, message: 'Success', data: cartData });
+
+    } catch (error) {
+        res.status(500).send({ status: false, message: error.message })
+    }
+}
+
+const updateCart = async (req, res) => {
+    try {
+        let data = req.body
+
+        if (Object.keys(data).length == 0) return res.status(400).send({ status: false, message: "Please put some data" })
+
+        const { userId, cartId } = data
+
+        let userData = await userModel.findById(userId)
+        if (!userData) return res.status(404).send({ status: false, message: "User not found!" })
+
+        let cartData = await cartModel.findOne({ userId })
+        if (!cartData) return res.status(404).send({ status: false, message: `You haven't added any products to your cart` })
+
+
+
+    } catch (error) {
+        res.status(500).send({ status: false, message: error.message })
+    }
+}
+
+module.exports = { createCart, getCart, updateCart }
